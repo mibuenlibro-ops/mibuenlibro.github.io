@@ -257,7 +257,7 @@
     <!-- Lógica Principal de JavaScript -->
     <script>
         // =======================================================
-        // 🚨 PASOS OBLIGATORIOS: REEMPLAZA TU CLAVE Y URL REALES
+        // 🚨 CLAVE API REAL INSERTADA
         // =======================================================
         // Reemplace con su clave API-Football real
         const API_KEY = "04fa8d1e88335ba1243f72e830979eda"; 
@@ -326,8 +326,8 @@
             let fixtures = [];
 
             if (API_KEY !== "TU_CLAVE_SECRETA_DE_API_AQUI") {
-                // *** BLOQUE PARA CONEXIÓN REAL A LA API-FOOTBALL ***
-                const url = `${FIXTURES_LIST_API_URL}?league=${leagueId}&season=2024&date=${date}`; // Asumiendo temporada 2024
+                // *** BLOQUE PARA CONEXIÓN REAL A LA API-FOOTBALL (LISTA DE PARTIDOS) ***
+                const url = `${FIXTURES_LIST_API_URL}?league=${leagueId}&season=2024&date=${date}`; 
                 const options = {
                     method: 'GET',
                     headers: { 'x-apisports-key': API_KEY }
@@ -336,8 +336,6 @@
                 try {
                     const response = await fetchWithRetry(url, options);
                     if (response.response && response.response.length > 0) {
-                         // Lógica de mapeo de la respuesta real de la API aquí
-                        // Por ahora, solo simular la estructura
                         fixtures = response.response.map(f => ({
                             id: f.fixture.id,
                             home: f.teams.home.name,
@@ -677,13 +675,12 @@
                     const response = await fetchWithRetry(finalUrl, options);
                     
                     if (response.response && response.response.length > 0) {
-                        // ** ⚠️ ESTE ES EL BLOQUE CLAVE PARA EL MAPEO DE DATOS REALES DE API-FOOTBALL **
-                        
-                        // La respuesta de la API es un array con dos objetos: uno para el equipo local y otro para el visitante.
-                        // Cada objeto tiene un array de estadísticas (Goles, Córners, etc.).
-                        
-                        // DEBE IMPLEMENTARSE UNA FUNCIÓN EXTERNA DE MAPEO, por ejemplo:
-                        // data = mapApiDataToPredictionFormat(response.response); 
+                        // 🛑 ¡NUEVO! IMPRIMIR RESPUESTA JSON PARA MAPEO
+                        console.warn('RESPUESTA API-FOOTBALL (JSON CRUDO):');
+                        console.warn(JSON.stringify(response.response));
+                        console.warn('----------------------------------------------------');
+                        console.warn('COPIE ESTE JSON Y COMPÁRTALO PARA COMPLETAR EL MAPEO');
+                        console.warn('----------------------------------------------------');
                         
                         // Por ahora, forzamos la simulación para evitar errores si no se mapea.
                         data = getSimulatedData(matchId);
@@ -776,4 +773,3 @@
 
 </body>
 </html>
-
