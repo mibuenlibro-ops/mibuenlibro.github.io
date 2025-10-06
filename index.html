@@ -94,7 +94,8 @@
             <!-- FECHA -->
             <div class="md:col-span-1">
                 <label for="fixtureDate" class="block text-sm font-medium mb-2">Fecha</label>
-                <input type="date" id="fixtureDate" value="2025-10-20"
+                <!-- Valor por defecto ajustado a la fecha actual para mayor compatibilidad con la API -->
+                <input type="date" id="fixtureDate" value="${new Date().toISOString().split('T')[0]}"
                        onchange="loadMatchesForLeagueAndDate()" 
                        class="w-full p-3 border border-app-bg rounded-lg bg-input-bg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition duration-150">
             </div>
