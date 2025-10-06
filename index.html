@@ -229,7 +229,7 @@
         // Variables globales obligatorias para el entorno
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Corregido el error de referencia
 
         let app, db, auth, userId;
 
@@ -271,19 +271,42 @@
 
         /**
          * Función que aplica la lógica de reintento con espera exponencial.
+         * SOLUCIÓN: Maneja las respuestas que no son JSON (como los errores de API key/límite).
          */
         async function fetchWithRetry(url, options, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url, options);
+                    
+                    // Comprueba si el servidor realmente está enviando JSON
+                    const contentType = response.headers.get('content-type');
+                    let responseData = null;
+
+                    if (contentType && contentType.includes('application/json')) {
+                        responseData = await response.json();
+                    } else {
+                        // Lee el texto crudo del error para debug
+                        const errorText = await response.text();
+                        console.error(`Error de la API (No-JSON): La respuesta no es JSON. Texto del error: ${errorText.substring(0, 100)}...`);
+                        
+                        // Si no hay JSON y el estado no es OK, forzamos un error
+                        if (!response.ok) {
+                           throw new Error(`Fallo de autenticación o límite de API excedido.`);
+                        }
+                        return { response: [], errors: { message: "Respuesta no es JSON. Asumiendo no hay datos." } };
+                    }
+
                     if (response.status === 404 && url.includes(STATS_API_URL)) {
-                        // Si es 404 para las estadísticas, es común que no haya datos.
                         return { response: [], errors: { message: "No se encontraron estadísticas para este partido. Usando datos simulados." } };
                     }
+                    
+                    // Si la respuesta es JSON, pero tiene un error de la API (ej. límite excedido)
                     if (!response.ok) {
-                        throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+                        return responseData; 
                     }
-                    return response.json();
+                    
+                    return responseData;
+
                 } catch (error) {
                     if (i < retries - 1) {
                         const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
@@ -335,7 +358,14 @@
 
                 try {
                     const response = await fetchWithRetry(url, options);
-                    if (response.response && response.response.length > 0) {
+                    
+                    // Comprobación de errores de la API (ej. límite excedido)
+                    if (response && response.errors) {
+                        console.warn(`Error de la API al obtener fixtures: ${JSON.stringify(response.errors)}`);
+                        throw new Error("Límite de API o error de servidor. Usando simulación.");
+                    }
+                    
+                    if (response && response.response && response.response.length > 0) {
                         fixtures = response.response.map(f => ({
                             id: f.fixture.id,
                             home: f.teams.home.name,
@@ -381,6 +411,85 @@
                  matchIdInput.value = fixtures[0].id;
                  matchSelect.value = fixtures[0].id; // Esto desencadena el onchange si ya hay un valor
             }
+        }
+        
+        /**
+         * Función auxiliar para extraer el valor de una estadística específica del array de estadísticas.
+         */
+        function getStatValue(statsArray, type) {
+            const stat = statsArray.find(s => s.type === type);
+            // El valor puede venir como string ("10") o número (10) o porcentaje ("50%").
+            if (stat && stat.value !== null) {
+                const val = stat.value.toString().replace('%', '');
+                return parseFloat(val);
+            }
+            return 0;
+        }
+
+        /**
+         * FUNCIÓN CRUCIAL: Mapea la respuesta JSON de la API-Football al formato del algoritmo.
+         * La respuesta (apiResponse) es un array con dos objetos: [0] Local, [1] Visitante.
+         */
+        function mapApiDataToPredictionFormat(apiResponse, selectedMatchName) {
+            // Intenta identificar los equipos por nombre para mayor robustez
+            const homeTeamName = selectedMatchName.split(' vs ')[0];
+            const awayTeamName = selectedMatchName.split(' vs ')[1];
+
+            // Busca las estadísticas por nombre de equipo
+            const localStats = apiResponse.find(res => res.team.name === homeTeamName);
+            const visitorStats = apiResponse.find(res => res.team.name === awayTeamName);
+            
+            // Si el mapeo por nombre falla (a veces los nombres difieren ligeramente), usamos el orden [0] y [1] como fallback
+            const localData = localStats || apiResponse[0];
+            const visitorData = visitorStats || apiResponse[1];
+
+            // Si no hay estadísticas o no se puede identificar el equipo, retornamos null
+            if (!localData || !visitorData || !localData.statistics || !visitorData.statistics) {
+                 console.error("Fallo en el mapeo: No se encontraron estadísticas válidas para ambos equipos en el JSON.");
+                 return null;
+            }
+
+            // Extracción de métricas clave usando getStatValue
+            // Usamos Total Shots / 5 como una métrica sustituta de promedio de goles (ya que la API Stats no da promedios)
+            const localGoals = getStatValue(localData.statistics, 'Total Shots') / 5; 
+            const visitorGoals = getStatValue(visitorData.statistics, 'Total Shots') / 5; 
+
+            // Datos mapeados directamente del JSON de ejemplo
+            const localCorners = getStatValue(localData.statistics, 'Corner Kicks');
+            const visitorCorners = getStatValue(visitorData.statistics, 'Corner Kicks');
+
+            const localFouls = getStatValue(localData.statistics, 'Fouls');
+            const visitorFouls = getStatValue(visitorData.statistics, 'Fouls');
+
+            const localShotsOnTarget = getStatValue(localData.statistics, 'Shots on Goal');
+            const visitorShotsOnTarget = getStatValue(visitorData.statistics, 'Shots on Goal');
+
+            // Tarjetas (Amarilla = 1, Roja = 2)
+            const localCards = getStatValue(localData.statistics, 'Yellow Cards') + (getStatValue(localData.statistics, 'Red Cards') * 2);
+            const visitorCards = getStatValue(visitorData.statistics, 'Yellow Cards') + (getStatValue(visitorData.statistics, 'Red Cards') * 2);
+            
+            // Objeto de retorno con el formato que necesita tu algoritmo
+            return {
+                team_local: localData.team.name,
+                team_visitante: visitorData.team.name,
+                
+                // NOTA: Los datos de FORMA y H2H se quedan en 0 porque la API Stats no los proporciona. 
+                forma_local: { V: 0, E: 0, D: 0 }, 
+                forma_visitante: { V: 0, E: 0, D: 0 },
+                h2h: { local_wins: 0, visitor_wins: 0, draws: 0 },
+
+                // Datos mapeados
+                goles_promedio_local: localGoals, 
+                goles_promedio_visitante: visitorGoals,
+                corners_promedio_total: localCorners + visitorCorners, 
+                fouls_promedio_total: localFouls + visitorFouls,
+                shots_on_target_avg: localShotsOnTarget + visitorShotsOnTarget,
+                cards_total_avg: localCards + visitorCards,
+                
+                // BTTS (Simulación basada en el promedio de goles mapeado)
+                local_btts_percentage: Math.min(100, (localGoals * 100) / 1.5), // Normalizado a un umbral realista
+                visitor_btts_percentage: Math.min(100, (visitorGoals * 100) / 1.5),
+            };
         }
         
         // =======================================================
@@ -443,6 +552,7 @@
                     return { ...data, team_local: "Partido no encontrado", team_visitante: "ID: " + matchId };
             }
         }
+
 
         // =======================================================
         // ALGORITMOS DE PREDICCIÓN CON PUNTUACIÓN (Lógica Mejorada)
@@ -636,6 +746,7 @@
             const leagueNameSelect = document.getElementById('leagueNameSelect');
             const leagueNameInput = leagueNameSelect.options[leagueNameSelect.selectedIndex].text;
             const matchSelect = document.getElementById('matchSelect');
+            const selectedMatchName = matchSelect.options[matchSelect.selectedIndex].text; // Nombre del partido
 
             const loadingIndicator = document.getElementById('loadingIndicator');
             const outputs = [
@@ -646,7 +757,7 @@
             ];
             const matchInfo = document.getElementById('matchInfo');
             const predictButton = document.getElementById('predictButton');
-
+            
             // 1. Inicialización de la interfaz
             outputs.forEach(el => el.textContent = "Cargando...");
             matchInfo.textContent = "";
@@ -674,23 +785,24 @@
                     
                     const response = await fetchWithRetry(finalUrl, options);
                     
-                    if (response.response && response.response.length > 0) {
-                        // 🛑 ¡NUEVO! IMPRIMIR RESPUESTA JSON PARA MAPEO
-                        console.warn('RESPUESTA API-FOOTBALL (JSON CRUDO):');
-                        console.warn(JSON.stringify(response.response));
-                        console.warn('----------------------------------------------------');
-                        console.warn('COPIE ESTE JSON Y COMPÁRTALO PARA COMPLETAR EL MAPEO');
-                        console.warn('----------------------------------------------------');
+                    if (response && response.response && response.response.length > 0) {
                         
-                        // Por ahora, forzamos la simulación para evitar errores si no se mapea.
-                        data = getSimulatedData(matchId);
-                        console.log("Conexión API exitosa, usando datos simulados. ¡Es momento de mapear los datos reales!");
+                        // ** Llama a la nueva función de mapeo con los datos reales **
+                        data = mapApiDataToPredictionFormat(response.response, selectedMatchName);
+
+                        if (!data) {
+                             throw new Error("Mapeo fallido. Usando simulación.");
+                        }
+                        console.log("Conexión API exitosa, usando datos REALES.");
 
                     } else {
-                        // Si la llamada no encontró estadísticas para ese partido, se usa la simulación
+                        // Si la respuesta no es OK (ej. error 403 o límite) o no tiene datos
+                        if (response && response.errors) {
+                            console.error("Error de la API (JSON):", response.errors);
+                        }
                         data = getSimulatedData(matchId);
                         isSimulated = true;
-                        console.warn("No se encontraron estadísticas reales, usando datos simulados.");
+                        console.warn("No se encontraron estadísticas reales o hubo un error, usando datos simulados.");
                     }
                 } else {
                     // Si el usuario no puso la clave, usamos los datos simulados.
