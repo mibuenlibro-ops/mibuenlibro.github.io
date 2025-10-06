@@ -3,886 +3,514 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Modelado de Pronósticos (Fútbol)</title>
-    <!-- Carga de Tailwind CSS para un diseño moderno y responsivo -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        // === PALETA DE COLORES (PROFESIONAL DARK MODE) ===
-                        'app-bg': '#1E2733', // Fondo principal muy oscuro
-                        'card-bg': '#2A3644', // Fondo de tarjeta de entrada/Contenedor
-                        'input-bg': '#394759', // Tono más bajo para los inputs/selects (contraste)
-                        'accent-green': '#33CC66', // Verde brillante para el botón y acentos
-                        'text-light': '#F0F5F9', // Texto claro
-                        'result-card': '#394759', // Fondo para las tarjetas de pronóstico
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
+    <title>Pronósticos de Fútbol</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: theme('colors.app-bg');
-            color: theme('colors.text-light');
-        }
-        /* Estilo FUERTE para los inputs, select y option en modo oscuro */
-        input, select {
-            background-color: theme('colors.input-bg') !important; 
-            color: theme('colors.text-light') !important;
-            border: 1px solid theme('colors.app-bg') !important; /* Borde más sutil */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        /* Estilo para los valores iniciales de los campos (placeholder/valor por defecto) */
-        /* Usa gris 500 para el texto del input no editado */
-        #fixtureDate, #leagueNameSelect, #matchSelect {
-            color: theme('colors.gray.500') !important;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-
-        /* Y cuando el usuario lo enfoca, vuelve al color claro (para el texto que escriba o seleccione) */
-        #fixtureDate:focus, #leagueNameSelect:focus, #matchSelect:focus {
-             color: theme('colors.text-light') !important;
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
-
-        /* Las opciones dentro del select (dropdown) también deben ser oscuras */
-        select option {
-            background-color: theme('colors.input-bg');
-            color: theme('colors.text-light');
+        
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 2.5rem;
+            margin: 40px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        /* Estilo específico para los labels */
-        label {
-            color: theme('colors.text-light');
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin: 20px 0;
         }
-        /* Ajuste para que las tarjetas se vean bien en lista o en horizontal */
-        .prediction-grid {
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #league-selector {
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .match-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            transition: all 0.3s;
+        }
+        
+        .match-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+        
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .league-badge {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .team-names {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 25px 0;
+        }
+        
+        .team-logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+        
+        .match-info {
             display: grid;
-            grid-template-columns: repeat(1, minmax(0, 1fr));
-            gap: 1rem; /* gap-4 */
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            color: #666;
         }
-        @media (min-width: 1024px) {
-            .prediction-grid {
-                grid-template-columns: repeat(1, minmax(0, 1fr));
-            }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #dc3545;
+            margin: 15px 0;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #28a745;
+            margin: 15px 0;
+        }
+        
+        .prediction-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .prediction-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .badge-1 { background: #28a745; }
+        .badge-x { background: #ffc107; color: #333; }
+        .badge-2 { background: #dc3545; }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .control-panel { flex-direction: column; }
+            .team-names { flex-direction: column; gap: 20px; }
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 flex items-start justify-center">
-
-    <!-- Contenedor Principal: Tarjeta de Análisis -->
-    <div class="w-full max-w-5xl bg-card-bg text-text-light shadow-2xl rounded-xl p-6 md:p-10 transition-all duration-300">
+<body>
+    <div class="container">
+        <h1>⚽ Pronósticos de Fútbol</h1>
         
-        <!-- Línea divisora sutil -->
-        <div class="border-b-4 border-text-light/20 pb-4 mb-6">
-            <!-- Título del App con color de acento -->
-            <h1 class="text-3xl md:text-4xl font-extrabold text-accent-green">Predictor</h1>
-        </div>
-
-        <!-- Sección de Parámetros de Entrada -->
-        <!-- Color gris 500 para el título de la sección (suave y consistente) -->
-        <h2 class="text-xl font-semibold mb-4 text-gray-500">Parámetros de Entrada</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <!-- Campo oculto para almacenar el ID del partido seleccionado -->
-            <input type="hidden" id="matchId" value="12345">
-            
-            <!-- FECHA -->
-            <div class="md:col-span-1">
-                <label for="fixtureDate" class="block text-sm font-medium mb-2">Fecha</label>
-                <!-- Valor por defecto ajustado a la fecha actual para mayor compatibilidad con la API -->
-                <input type="date" id="fixtureDate" value="${new Date().toISOString().split('T')[0]}"
-                       onchange="loadMatchesForLeagueAndDate()" 
-                       class="w-full p-3 border border-app-bg rounded-lg bg-input-bg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition duration-150">
-            </div>
-            
-            <!-- LIGA -->
-            <div class="md:col-span-2">
-                <label for="leagueNameSelect" class="block text-sm font-medium mb-2">Liga</label>
-                <select id="leagueNameSelect"
-                        onchange="loadMatchesForLeagueAndDate()" 
-                        class="w-full p-3 border border-app-bg rounded-lg bg-input-bg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition duration-150">
-                    <!-- Los IDs de Liga (ej. value="39") son los que usaría la API-Football real -->
-                    <option value="4">Premier League (Inglaterra)</option> 
-                    <option value="39" selected>La Liga (España)</option>
-                    <option value="140">Serie A (Italia)</option>
-                    <option value="78">Bundesliga (Alemania)</option>
-                    <option value="61">Ligue 1 (Francia)</option>
-                    <option value="2">UEFA Champions League</option>
-                    <option value="0">Otra Liga/Copa...</option>
+        <div class="card">
+            <div class="control-panel">
+                <button onclick="probarConexion()">🔌 Test API</button>
+                
+                <select id="league-selector">
+                    <option value="140">🇪🇸 La Liga</option>
+                    <option value="39">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+                    <option value="135">🇮🇹 Serie A</option>
+                    <option value="78">🇩🇪 Bundesliga</option>
+                    <option value="61">🇫🇷 Ligue 1</option>
                 </select>
-            </div>
-
-            <!-- SELECCIÓN DE PARTIDO -->
-            <div class="md:col-span-3">
-                <label for="matchSelect" class="block text-sm font-medium mb-2">Partido</label>
-                <select id="matchSelect"
-                        onchange="document.getElementById('matchId').value = this.value;"
-                        class="w-full p-3 border border-app-bg rounded-lg bg-input-bg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition duration-150">
-                    <option value="" disabled selected>Cargando partidos...</option>
-                </select>
-            </div>
-            
-            <!-- Botón de Análisis -->
-            <div class="md:col-span-3 mt-4">
-                <button onclick="obtenerEstadisticasYPredecir()"
-                        id="predictButton"
-                        class="w-full bg-accent-green hover:opacity-90 text-app-bg font-extrabold tracking-wide py-3 px-4 rounded-lg transition duration-300 shadow-lg shadow-green-500/50 hover:shadow-xl transform hover:scale-[1.005] disabled:opacity-50">
-                    EJECUTAR ANÁLISIS ESTADÍSTICO
-                </button>
+                
+                <button onclick="cargarPartidos()">📊 Cargar Partidos</button>
+                <button onclick="limpiarPronosticos()" style="background: #dc3545;">🗑️ Limpiar</button>
             </div>
         </div>
 
-        <!-- Área de Resultados y Mensajes -->
-        <div id="resultsArea" class="mt-10 p-6 bg-app-bg rounded-xl border border-card-bg">
-            <h2 class="text-2xl font-bold text-accent-green mb-4">Pronóstico</h2>
-            
-            <!-- Indicador de Carga -->
-            <div id="loadingIndicator" class="hidden flex items-center text-accent-green p-4 bg-result-card rounded-lg shadow">
-                <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-accent-green" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span class="font-medium">Conectando a la API y modelando el pronóstico...</span>
+        <div class="card">
+            <h2>📅 Próximos Partidos</h2>
+            <div id="matches-container">
+                <p style="text-align: center; color: #666; padding: 40px;">
+                    Haz clic en "Cargar Partidos" para ver los próximos encuentros
+                </p>
             </div>
+        </div>
 
-            <div id="analysisContent" class="space-y-4">
-                
-                <!-- LISTA DE 7 PREDICCIONES (Vertical) -->
-                <div class="prediction-grid">
-                    
-                    <!-- Tarjeta 1: Pronóstico 1X2 (Resultado Final) -->
-                    <div class="bg-result-card text-text-light p-4 rounded-lg shadow-xl border-l-4 border-red-500">
-                        <h3 class="text-base font-bold mb-2 tracking-wider">RESULTADO FINAL (1X2)</h3>
-                        <p id="predictionOutput" class="text-xl font-extrabold break-words min-h-[40px] flex items-center">
-                            <!-- Aquí aparecerá el pronóstico 1X2 -->
-                        </p>
-                    </div>
-
-                    <!-- Tarjeta 2: Pronóstico de Goles (Más/Menos 2.5) -->
-                    <div class="bg-result-card text-text-light p-4 rounded-lg shadow-xl border-l-4 border-accent-green">
-                        <h3 class="text-base font-bold mb-2 tracking-wider">TOTAL DE GOLES (OVER/UNDER 2.5)</h3>
-                        <p id="predictionGoalsOutput" class="text-xl font-extrabold break-words min-h-[40px] flex items-center">
-                            <!-- Aquí aparecerá el pronóstico de Goles -->
-                        </p>
-                    </div>
-
-                    <!-- Tarjeta 3: Pronóstico de Córners (Más/Menos 10.5) -->
-                    <div class="bg-result-card text-text-light p-4 rounded-lg shadow-xl border-l-4 border-yellow-500">
-                        <h3 class="text-base font-bold mb-2 tracking-wider">TIROS DE ESQUINA (CÓRNERS)</h3>
-                        <p id="predictionCornersOutput" class="text-xl font-extrabold break-words min-h-[40px] flex items-center">
-                            <!-- Aquí aparecerá el pronóstico de Córners -->
-                        </p>
-                    </div>
-                    
-                    <!-- Tarjeta 4: Pronóstico de Ambos Equipos Marcarán (BTTS) -->
-                    <div class="bg-result-card text-text-light p-4 rounded-lg shadow-xl border-l-4 border-accent-green">
-                        <h3 class="text-base font-bold mb-2 tracking-wider">AMBOS EQUIPOS MARCAN (BTTS)</h3>
-                        <p id="predictionBTTSOutput" class="text-xl font-extrabold break-words min-h-[40px] flex items-center">
-                            <!-- Aquí aparecerá el pronóstico de BTTS -->
-                        </p>
-                    </div>
-
-                    <!-- Tarjeta 5: Pronóstico de Faltas Cometidas -->
-                    <div class="bg-result-card text-text-light p-4 rounded-lg shadow-xl border-l-4 border-blue-400">
-                        <h3 class="text-base font-bold mb-2 tracking-wider">FALTAS COMETIDAS (TOTAL)</h3>
-                        <p id="predictionFoulsOutput" class="text-xl font-extrabold break-words min-h-[40px] flex items-center">
-                            <!-- Aquí aparecerá el pronóstico de Faltas -->
-                        </p>
-                    </div>
-                    
-                    <!-- Tarjeta 6: Pronóstico de Disparos a Puerta -->
-                    <div class="bg-result-card text-text-light p-4 rounded-lg shadow-xl border-l-4 border-purple-500">
-                        <h3 class="text-base font-bold mb-2 tracking-wider">DISPAROS A PUERTA (TOTAL)</h3>
-                        <p id="predictionShotsOutput" class="text-xl font-extrabold break-words min-h-[40px] flex items-center">
-                            <!-- Aquí aparecerá el pronóstico de Disparos a Puerta -->
-                        </p>
-                    </div>
-
-                    <!-- Tarjeta 7: Pronóstico de Tarjetas -->
-                    <div class="bg-result-card text-text-light p-4 rounded-lg shadow-xl border-l-4 border-red-900">
-                        <h3 class="text-base font-bold mb-2 tracking-wider">TOTAL TARJETAS (AMARILLAS/ROJAS)</h3>
-                        <p id="predictionCardsOutput" class="text-xl font-extrabold break-words min-h-[40px] flex items-center">
-                            <!-- Aquí aparecerá el pronóstico de Tarjetas -->
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- Información básica del partido -->
-                <div id="matchInfo" class="font-bold text-lg text-accent-green pt-6 border-t border-card-bg">
-                    <!-- Aquí aparecerá el resumen del partido seleccionado -->
-                </div>
-
+        <div class="card">
+            <h2>🎯 Mis Pronósticos</h2>
+            <div id="predictions-container">
+                <p style="text-align: center; color: #666; padding: 20px;">
+                    No hay pronósticos guardados
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- Script de Firebase (Manejo del Entorno) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Variables globales obligatorias para el entorno
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Corregido el error de referencia
-
-        let app, db, auth, userId;
-
-        if (firebaseConfig) {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            async function authenticate() {
-                try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    userId = auth.currentUser?.uid || crypto.randomUUID();
-                } catch (error) {
-                    console.error("Error de autenticación de Firebase:", error);
-                }
-            }
-            authenticate();
-        }
-    </script>
-
-    <!-- Lógica Principal de JavaScript -->
     <script>
-        // =======================================================
-        // 🚨 CLAVE API REAL INSERTADA
-        // =======================================================
-        // Reemplace con su clave API-Football real
-        const API_KEY = "04fa8d1e88335ba1243f72e830979eda"; 
+        // ================================================
+        // TU API KEY (Ya configurada correctamente)
+        // ================================================
+        const API_KEY = '04fa8d1e88335ba1243f72e830979eda';
         
-        // Endpoints de la API-Football
-        // 1. Para obtener las estadísticas de un partido (usado en obtenerEstadisticasYPredecir)
-        const STATS_API_URL = "https://v3.football.api-sports.io/fixtures/statistics";
-        // 2. Para obtener la lista de partidos (usado en loadMatchesForLeagueAndDate)
-        const FIXTURES_LIST_API_URL = "https://v3.football.api-sports.io/fixtures";
-        // =======================================================
+        // ================================================
+        // URLs CORRECTAS de API-Sports (las que tenías)
+        // ================================================
+        const CONFIG = {
+            apiUrl: 'https://v3.football.api-sports.io',
+            currentSeason: 2024
+        };
 
-        /**
-         * Función que aplica la lógica de reintento con espera exponencial.
-         * SOLUCIÓN: Maneja las respuestas que no son JSON (como los errores de API key/límite).
-         */
-        async function fetchWithRetry(url, options, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    
-                    // Comprueba si el servidor realmente está enviando JSON
-                    const contentType = response.headers.get('content-type');
-                    let responseData = null;
+        const headers = {
+            'x-apisports-key': API_KEY
+        };
 
-                    if (contentType && contentType.includes('application/json')) {
-                        responseData = await response.json();
-                    } else {
-                        // Lee el texto crudo del error para debug
-                        const errorText = await response.text();
-                        console.error(`Error de la API (No-JSON): La respuesta no es JSON. Texto del error: ${errorText.substring(0, 100)}...`);
-                        
-                        // Si no hay JSON y el estado no es OK, forzamos un error
-                        if (!response.ok) {
-                           throw new Error(`Fallo de autenticación o límite de API excedido.`);
-                        }
-                        return { response: [], errors: { message: "Respuesta no es JSON. Asumiendo no hay datos." } };
-                    }
-
-                    if (response.status === 404 && url.includes(STATS_API_URL)) {
-                        return { response: [], errors: { message: "No se encontraron estadísticas para este partido. Usando datos simulados." } };
-                    }
-                    
-                    // Si la respuesta es JSON, pero tiene un error de la API (ej. límite excedido)
-                    if (!response.ok) {
-                        return responseData; 
-                    }
-                    
-                    return responseData;
-
-                } catch (error) {
-                    if (i < retries - 1) {
-                        const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                    } else {
-                        throw error;
-                    }
+        async function probarConexion() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ Conectando...';
+            
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/status`, { headers });
+                const data = await response.json();
+                
+                if (data.response) {
+                    const info = data.response.requests;
+                    mostrarMensaje('success', `✅ Conexión OK! Requests: ${info.current}/${info.limit_day}`);
+                    btn.textContent = '✅ Conectado';
                 }
+            } catch (error) {
+                mostrarMensaje('error', '❌ Error de conexión. Verifica tu API Key');
+                btn.textContent = '🔌 Test API';
+                btn.disabled = false;
             }
         }
 
-        // =======================================================
-        // SIMULACIÓN DE DATOS - LISTA DE PARTIDOS
-        // =======================================================
-        const simulatedFixturesList = {
-            "39_2025-10-20": [ // La Liga (ID 39)
-                { id: '12345', home: 'Real Madrid', away: 'Barcelona', league: 'La Liga (España)' },
-                { id: '54321', home: 'Atlético Madrid', away: 'Osasuna', league: 'La Liga (España)' },
-                { id: '67890', home: 'Sevilla', away: 'Valencia', league: 'La Liga (España)' }
-            ],
-            "4_2025-10-20": [ // Premier League (ID 4)
-                { id: '20001', home: 'Liverpool', away: 'Man City', league: 'Premier League (Inglaterra)' },
-                { id: '20002', home: 'Chelsea', away: 'Arsenal', league: 'Premier League (Inglaterra)' }
-            ]
-        };
-        
-        /**
-         * FUNCIÓN CLAVE: Llama a la API para obtener la lista de partidos (o usa simulación).
-         */
-        async function loadMatchesForLeagueAndDate() {
-            const date = document.getElementById('fixtureDate').value.trim();
-            const leagueId = document.getElementById('leagueNameSelect').value.trim();
-            const leagueText = document.getElementById('leagueNameSelect').options[document.getElementById('leagueNameSelect').selectedIndex].text;
-            const matchSelect = document.getElementById('matchSelect');
-            const matchIdInput = document.getElementById('matchId');
-
-            matchSelect.innerHTML = '<option value="" disabled selected>Cargando partidos...</option>';
-            matchIdInput.value = '';
-
-            let fixtures = [];
-
-            if (API_KEY !== "TU_CLAVE_SECRETA_DE_API_AQUI") {
-                // *** BLOQUE PARA CONEXIÓN REAL A LA API-FOOTBALL (LISTA DE PARTIDOS) ***
-                const url = `${FIXTURES_LIST_API_URL}?league=${leagueId}&season=2024&date=${date}`; 
-                const options = {
-                    method: 'GET',
-                    headers: { 'x-apisports-key': API_KEY }
-                };
-
-                try {
-                    const response = await fetchWithRetry(url, options);
-                    
-                    // Comprobación de errores de la API (ej. límite excedido)
-                    if (response && response.errors) {
-                        console.warn(`Error de la API al obtener fixtures: ${JSON.stringify(response.errors)}`);
-                        throw new Error("Límite de API o error de servidor. Usando simulación.");
-                    }
-                    
-                    if (response && response.response && response.response.length > 0) {
-                        fixtures = response.response.map(f => ({
-                            id: f.fixture.id,
-                            home: f.teams.home.name,
-                            away: f.teams.away.name,
-                            league: leagueText
-                        }));
-                        console.log("Fixtures cargados de la API Real.");
-                    } else {
-                        throw new Error("No hay partidos de la API para esta fecha/liga. Usando simulación.");
-                    }
-                } catch (error) {
-                    console.warn(`Error al obtener fixtures de la API: ${error.message}. Usando simulación.`);
-                    fixtures = simulatedFixturesList[`${leagueId}_${date}`] || [];
-                }
-            } else {
-                 // *** BLOQUE DE SIMULACIÓN ***
-                fixtures = simulatedFixturesList[`${leagueId}_${date}`] || [];
-            }
+        async function cargarPartidos() {
+            const selector = document.getElementById('league-selector');
+            const leagueId = parseInt(selector.value);
+            const container = document.getElementById('matches-container');
             
-            // Rellena el selector
-            matchSelect.innerHTML = '';
-            if (fixtures.length === 0) {
-                matchSelect.innerHTML = '<option value="" disabled selected>No hay partidos disponibles.</option>';
-                return;
+            container.innerHTML = '<div class="loading">Cargando partidos</div>';
+            
+            try {
+                const response = await fetch(
+                    `${CONFIG.apiUrl}/fixtures?league=${leagueId}&season=${CONFIG.currentSeason}&next=15`,
+                    { headers }
+                );
+                
+                if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+                
+                const data = await response.json();
+                console.log('Datos recibidos:', data);
+                
+                if (data.response && data.response.length > 0) {
+                    mostrarPartidos(data.response);
+                } else {
+                    container.innerHTML = '<p class="error-message">⚠️ No hay partidos próximos para esta liga</p>';
+                }
+                
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <strong>❌ Error:</strong> ${error.message}<br><br>
+                        Verifica que tu API Key esté correctamente configurada
+                    </div>
+                `;
+                console.error('Error completo:', error);
             }
+        }
 
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Seleccione un partido...';
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            matchSelect.appendChild(defaultOption);
-
-            fixtures.forEach(fixture => {
-                const option = document.createElement('option');
-                option.value = fixture.id; 
-                option.textContent = `${fixture.home} vs ${fixture.away}`;
-                matchSelect.appendChild(option);
+        function mostrarPartidos(partidos) {
+            const container = document.getElementById('matches-container');
+            container.innerHTML = '';
+            
+            partidos.forEach(p => {
+                const fecha = new Date(p.fixture.date);
+                const fechaStr = fecha.toLocaleDateString('es-ES', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                });
+                const horaStr = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                
+                const card = document.createElement('div');
+                card.className = 'match-card';
+                card.innerHTML = `
+                    <div class="match-header">
+                        <span class="league-badge">${p.league.name}</span>
+                        <span>${fechaStr}</span>
+                    </div>
+                    
+                    <div class="team-names">
+                        <div style="text-align: center; flex: 1;">
+                            <img src="${p.teams.home.logo}" class="team-logo">
+                            <div style="margin-top: 10px; font-weight: bold; font-size: 1.1rem;">${p.teams.home.name}</div>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 0 30px;">
+                            <div style="font-size: 2.5rem; color: #999; font-weight: bold;">VS</div>
+                            <div style="color: #667eea; margin-top: 10px; font-weight: bold;">⏰ ${horaStr}</div>
+                        </div>
+                        
+                        <div style="text-align: center; flex: 1;">
+                            <img src="${p.teams.away.logo}" class="team-logo">
+                            <div style="margin-top: 10px; font-weight: bold; font-size: 1.1rem;">${p.teams.away.name}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="match-info">
+                        <div>🏟️ ${p.fixture.venue.name || 'Por confirmar'}</div>
+                        <div>📍 ${p.fixture.venue.city || '-'}</div>
+                        <div>👤 ${p.fixture.referee || 'Por confirmar'}</div>
+                    </div>
+                    
+                    <button onclick="hacerPronostico(${p.fixture.id}, '${p.teams.home.name.replace(/'/g, "\\'")}', '${p.teams.away.name.replace(/'/g, "\\'")}', '${p.teams.home.logo}', '${p.teams.away.logo}')" 
+                            style="width: 100%; margin-top: 15px;">
+                        🎯 Hacer Pronóstico
+                    </button>
+                `;
+                
+                container.appendChild(card);
             });
             
-            // Selecciona el primer partido y actualiza el matchId oculto
-            if (fixtures.length > 0) {
-                 matchIdInput.value = fixtures[0].id;
-                 matchSelect.value = fixtures[0].id; // Esto desencadena el onchange si ya hay un valor
-            }
-        }
-        
-        /**
-         * Función auxiliar para extraer el valor de una estadística específica del array de estadísticas.
-         */
-        function getStatValue(statsArray, type) {
-            const stat = statsArray.find(s => s.type === type);
-            // El valor puede venir como string ("10") o número (10) o porcentaje ("50%").
-            if (stat && stat.value !== null) {
-                const val = stat.value.toString().replace('%', '');
-                return parseFloat(val);
-            }
-            return 0;
+            const contador = document.createElement('p');
+            contador.style.cssText = 'text-align: center; margin: 30px 0; color: #666; font-weight: bold; font-size: 1.1rem;';
+            contador.textContent = `📊 Mostrando ${partidos.length} partidos próximos`;
+            container.appendChild(contador);
         }
 
-        /**
-         * FUNCIÓN CRUCIAL: Mapea la respuesta JSON de la API-Football al formato del algoritmo.
-         * La respuesta (apiResponse) es un array con dos objetos: [0] Local, [1] Visitante.
-         */
-        function mapApiDataToPredictionFormat(apiResponse, selectedMatchName) {
-            // Intenta identificar los equipos por nombre para mayor robustez
-            const homeTeamName = selectedMatchName.split(' vs ')[0];
-            const awayTeamName = selectedMatchName.split(' vs ')[1];
-
-            // Busca las estadísticas por nombre de equipo
-            const localStats = apiResponse.find(res => res.team.name === homeTeamName);
-            const visitorStats = apiResponse.find(res => res.team.name === awayTeamName);
+        function hacerPronostico(id, home, away, homeLogo, awayLogo) {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 10000; padding: 20px;';
             
-            // Si el mapeo por nombre falla (a veces los nombres difieren ligeramente), usamos el orden [0] y [1] como fallback
-            const localData = localStats || apiResponse[0];
-            const visitorData = visitorStats || apiResponse[1];
-
-            // Si no hay estadísticas o no se puede identificar el equipo, retornamos null
-            if (!localData || !visitorData || !localData.statistics || !visitorData.statistics) {
-                 console.error("Fallo en el mapeo: No se encontraron estadísticas válidas para ambos equipos en el JSON.");
-                 return null;
-            }
-
-            // Extracción de métricas clave usando getStatValue
-            // Usamos Total Shots / 5 como una métrica sustituta de promedio de goles (ya que la API Stats no da promedios)
-            const localGoals = getStatValue(localData.statistics, 'Total Shots') / 5; 
-            const visitorGoals = getStatValue(visitorData.statistics, 'Total Shots') / 5; 
-
-            // Datos mapeados directamente del JSON de ejemplo
-            const localCorners = getStatValue(localData.statistics, 'Corner Kicks');
-            const visitorCorners = getStatValue(visitorData.statistics, 'Corner Kicks');
-
-            const localFouls = getStatValue(localData.statistics, 'Fouls');
-            const visitorFouls = getStatValue(visitorData.statistics, 'Fouls');
-
-            const localShotsOnTarget = getStatValue(localData.statistics, 'Shots on Goal');
-            const visitorShotsOnTarget = getStatValue(visitorData.statistics, 'Shots on Goal');
-
-            // Tarjetas (Amarilla = 1, Roja = 2)
-            const localCards = getStatValue(localData.statistics, 'Yellow Cards') + (getStatValue(localData.statistics, 'Red Cards') * 2);
-            const visitorCards = getStatValue(visitorData.statistics, 'Yellow Cards') + (getStatValue(visitorData.statistics, 'Red Cards') * 2);
+            modal.innerHTML = `
+                <div style="background: white; padding: 50px; border-radius: 20px; max-width: 600px; width: 100%; text-align: center;">
+                    <h2 style="margin-bottom: 40px; color: #667eea; font-size: 2rem;">🎯 Hacer Pronóstico</h2>
+                    
+                    <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 40px;">
+                        <div style="flex: 1;">
+                            <img src="${homeLogo}" style="width: 80px; height: 80px; object-fit: contain;">
+                            <p style="margin-top: 15px; font-weight: bold; font-size: 1.1rem;">${home}</p>
+                        </div>
+                        <div style="font-size: 2.5rem; color: #999; font-weight: bold; padding: 0 30px;">VS</div>
+                        <div style="flex: 1;">
+                            <img src="${awayLogo}" style="width: 80px; height: 80px; object-fit: contain;">
+                            <p style="margin-top: 15px; font-weight: bold; font-size: 1.1rem;">${away}</p>
+                        </div>
+                    </div>
+                    
+                    <p style="margin-bottom: 30px; color: #666; font-size: 1.1rem;">Selecciona tu pronóstico:</p>
+                    
+                    <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 30px;">
+                        <button onclick="guardarPronostico(${id}, '1', '${home.replace(/'/g, "\\'")}', '${away.replace(/'/g, "\\'")}', '${homeLogo}', '${awayLogo}')" 
+                                style="flex: 1; padding: 25px; background: #28a745; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.2rem;">
+                            1<br><small style="font-size: 0.8rem;">Victoria Local</small>
+                        </button>
+                        
+                        <button onclick="guardarPronostico(${id}, 'X', '${home.replace(/'/g, "\\'")}', '${away.replace(/'/g, "\\'")}', '${homeLogo}', '${awayLogo}')" 
+                                style="flex: 1; padding: 25px; background: #ffc107; color: #333; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.2rem;">
+                            X<br><small style="font-size: 0.8rem;">Empate</small>
+                        </button>
+                        
+                        <button onclick="guardarPronostico(${id}, '2', '${home.replace(/'/g, "\\'")}', '${away.replace(/'/g, "\\'")}', '${homeLogo}', '${awayLogo}')" 
+                                style="flex: 1; padding: 25px; background: #dc3545; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.2rem;">
+                            2<br><small style="font-size: 0.8rem;">Victoria Visitante</small>
+                        </button>
+                    </div>
+                    
+                    <button onclick="this.closest('div').parentElement.remove()" 
+                            style="padding: 15px 40px; background: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1rem; font-weight: bold;">
+                        Cancelar
+                    </button>
+                </div>
+            `;
             
-            // Objeto de retorno con el formato que necesita tu algoritmo
-            return {
-                team_local: localData.team.name,
-                team_visitante: visitorData.team.name,
-                
-                // NOTA: Los datos de FORMA y H2H se quedan en 0 porque la API Stats no los proporciona. 
-                forma_local: { V: 0, E: 0, D: 0 }, 
-                forma_visitante: { V: 0, E: 0, D: 0 },
-                h2h: { local_wins: 0, visitor_wins: 0, draws: 0 },
-
-                // Datos mapeados
-                goles_promedio_local: localGoals, 
-                goles_promedio_visitante: visitorGoals,
-                corners_promedio_total: localCorners + visitorCorners, 
-                fouls_promedio_total: localFouls + visitorFouls,
-                shots_on_target_avg: localShotsOnTarget + visitorShotsOnTarget,
-                cards_total_avg: localCards + visitorCards,
-                
-                // BTTS (Simulación basada en el promedio de goles mapeado)
-                local_btts_percentage: Math.min(100, (localGoals * 100) / 1.5), // Normalizado a un umbral realista
-                visitor_btts_percentage: Math.min(100, (visitorGoals * 100) / 1.5),
-            };
-        }
-        
-        // =======================================================
-        // SIMULACIÓN DE ESTADÍSTICAS (Valores para el Algoritmo)
-        // =======================================================
-        function getSimulatedData(matchId) {
-            // Un objeto con la información completa y detallada de un partido simulado
-            const data = {
-                team_local: "Equipo Local", team_visitante: "Equipo Visitante",
-                // Factores para 1X2 (Forma: V, E, D en últimos 5 partidos)
-                forma_local: { V: 0, E: 0, D: 0 }, forma_visitante: { V: 0, E: 0, D: 0 },
-                h2h: { local_wins: 0, visitor_wins: 0, draws: 0 },
-                // Promedios por partido
-                goles_promedio_local: 0.0, goles_promedio_visitante: 0.0,
-                corners_promedio_total: 0.0, // Total combinado
-                fouls_promedio_total: 0.0,
-                shots_on_target_avg: 0.0,
-                cards_total_avg: 0.0, // Tarjetas totales (amarillas=1, rojas=2)
-                
-                // Métrica específica para BTTS (Porcentaje de partidos donde el equipo MARCA)
-                local_btts_percentage: 0, 
-                visitor_btts_percentage: 0,
-            };
-
-            switch(matchId) {
-                case '12345': // Real Madrid vs Barcelona (ALTA GOLEADA - CLÁSICO)
-                    return { ...data, team_local: "Real Madrid", team_visitante: "Barcelona",
-                        forma_local: { V: 4, E: 1, D: 0 }, forma_visitante: { V: 3, E: 1, D: 1 },
-                        h2h: { local_wins: 2, visitor_wins: 2, draws: 1 }, // H2H neutro
-                        goles_promedio_local: 2.5, goles_promedio_visitante: 2.1, // Media alta
-                        corners_promedio_total: 12.5, // Media alta
-                        fouls_promedio_total: 21.0, // Media baja
-                        shots_on_target_avg: 10.0, // Media alta
-                        cards_total_avg: 5.5, // Media alta por clásico
-                        local_btts_percentage: 80, visitor_btts_percentage: 70
-                    };
-                case '54321': // Atlético Madrid vs Osasuna (BAJA GOLEADA - LOCAL FUERTE)
-                    return { ...data, team_local: "Atlético Madrid", team_visitante: "Osasuna",
-                        forma_local: { V: 4, E: 1, D: 0 }, forma_visitante: { V: 1, E: 1, D: 3 },
-                        h2h: { local_wins: 4, visitor_wins: 0, draws: 1 }, // H2H dominante
-                        goles_promedio_local: 1.2, goles_promedio_visitante: 0.9, // Media baja
-                        corners_promedio_total: 8.5, // Media baja
-                        fouls_promedio_total: 30.0, // Media alta
-                        shots_on_target_avg: 6.5, // Media baja
-                        cards_total_avg: 3.2, // Media baja
-                        local_btts_percentage: 40, visitor_btts_percentage: 30
-                    };
-                case '20001': // Liverpool vs Man City (PREMIER - ALTA OFENSIVA)
-                    return { ...data, team_local: "Liverpool", team_visitante: "Man City",
-                        forma_local: { V: 3, E: 2, D: 0 }, forma_visitante: { V: 4, E: 1, D: 0 },
-                        h2h: { local_wins: 1, visitor_wins: 1, draws: 3 }, // Tendencia a empate
-                        goles_promedio_local: 2.0, goles_promedio_visitante: 2.3, // Media muy alta
-                        corners_promedio_total: 10.0,
-                        fouls_promedio_total: 19.5,
-                        shots_on_target_avg: 12.0,
-                        cards_total_avg: 2.8,
-                        local_btts_percentage: 60, visitor_btts_percentage: 75
-                    };
-                default:
-                    return { ...data, team_local: "Partido no encontrado", team_visitante: "ID: " + matchId };
-            }
+            document.body.appendChild(modal);
+            modal.onclick = e => { if (e.target === modal) modal.remove(); };
         }
 
-
-        // =======================================================
-        // ALGORITMOS DE PREDICCIÓN CON PUNTUACIÓN (Lógica Mejorada)
-        // =======================================================
-
-        /**
-         * Genera el pronóstico para el mercado 1X2 mediante un sistema de puntuación.
-         */
-        function generarPronostico1X2(data) {
-            let scoreLocal = 0;
-            let scoreVisitor = 0;
-            const PUNTOS_MAX = 10;
+        function guardarPronostico(id, pred, home, away, homeLogo, awayLogo) {
+            const pronosticos = JSON.parse(localStorage.getItem('pronosticos') || '[]');
             
-            // 1. Puntuación por Forma Reciente (Máx 4 puntos)
-            scoreLocal += data.forma_local.V * 0.8 + data.forma_local.E * 0.4;
-            scoreVisitor += data.forma_visitante.V * 0.8 + data.forma_visitante.E * 0.4;
-
-            // 2. Puntuación por H2H (Máx 3 puntos)
-            if (data.h2h.local_wins > data.h2h.visitor_wins) scoreLocal += 1.5;
-            if (data.h2h.visitor_wins > data.h2h.local_wins) scoreVisitor += 1.5;
-            if (data.h2h.draws > data.h2h.local_wins && data.h2h.draws > data.h2h.visitor_wins) {
-                scoreLocal += 0.75; scoreVisitor += 0.75; // Empate favorece la X
-            }
+            pronosticos.push({
+                id, 
+                fecha: new Date().toISOString(), 
+                homeTeam: home, 
+                awayTeam: away,
+                homeLogo, 
+                awayLogo, 
+                prediccion: pred
+            });
             
-            // 3. Puntuación por Ofensiva (Máx 3 puntos)
-            if (data.goles_promedio_local > data.goles_promedio_visitante + 0.5) scoreLocal += 1.5;
-            if (data.goles_promedio_visitante > data.goles_promedio_local + 0.5) scoreVisitor += 1.5;
-
-            // Determinar resultado
-            let prediction = "";
-            let predictionClass = "text-yellow-400";
-            const diff = Math.abs(scoreLocal - scoreVisitor);
+            localStorage.setItem('pronosticos', JSON.stringify(pronosticos));
             
-            if (diff <= 1.5) { // Empate o victoria ajustada (X)
-                prediction = `EMPATE (X) o Victoria Mínima (${scoreLocal > scoreVisitor ? data.team_local : data.team_visitante})`;
-                predictionClass = "text-yellow-400";
-            } else if (scoreLocal > scoreVisitor) {
-                prediction = `VICTORIA LOCAL: ${data.team_local} (1)`;
-                predictionClass = "text-green-400";
-            } else {
-                prediction = `VICTORIA VISITANTE: ${data.team_visitante} (2)`;
-                predictionClass = "text-red-400";
-            }
+            document.querySelectorAll('div').forEach(div => {
+                if (div.style.zIndex === '10000') div.remove();
+            });
             
-            return { prediction, predictionClass };
-        }
-        
-        /**
-         * Genera el pronóstico para el mercado Ambos Equipos Marcarán (BTTS - Sí/No).
-         * Utiliza porcentajes de BTTS simulados.
-         */
-        function generarPronosticoBTTS(data) {
-            const avgBtts = (data.local_btts_percentage + data.visitor_btts_percentage) / 2;
-            let prediction = "";
-            let colorClass = "text-yellow-400";
-
-            if (avgBtts >= 65) {
-                prediction = `¡SÍ MARCAN AMBOS EQUIPOS! (YES)`;
-                colorClass = "text-green-400";
-            } else if (avgBtts <= 40) {
-                prediction = `PROBABLEMENTE NO MARCAN AMBOS (NO)`;
-                colorClass = "text-red-400";
-            } else {
-                prediction = "ANÁLISIS NEUTRO: Ligeramente Propenso a SÍ Marcan.";
-                colorClass = "text-yellow-300";
-            }
-
-            return { prediction, colorClass };
+            mostrarMensaje('success', '✅ Pronóstico guardado correctamente');
+            cargarPronosticosGuardados();
         }
 
-        /**
-         * Genera el pronóstico para el mercado Más/Menos de 2.5 Goles.
-         */
-        function generarPronosticoGoles(data) {
-            const totalGoalsAvg = data.goles_promedio_local + data.goles_promedio_visitante;
-            let prediction = "";
-            let colorClass = "text-yellow-400";
-
-            if (totalGoalsAvg > 3.0) { // Umbral alto
-                prediction = `¡MÁS DE 2.5 GOLES! (Media: ${totalGoalsAvg.toFixed(2)})`;
-                colorClass = "text-green-400";
-            } else if (totalGoalsAvg < 2.3) { // Umbral bajo
-                prediction = `MENOS DE 2.5 GOLES (Media: ${totalGoalsAvg.toFixed(2)})`;
-                colorClass = "text-red-400";
-            } else {
-                prediction = `MEDIO: POSIBLEMENTE 2 O 3 GOLES (Media: ${totalGoalsAvg.toFixed(2)})`;
-                colorClass = "text-yellow-400";
-            }
-
-            return { prediction, colorClass };
-        }
-
-        /**
-         * Genera el pronóstico para el mercado de Tiros de Esquina (Córners).
-         */
-        function generarPronosticoCorners(data) {
-            const totalCornersAvg = data.corners_promedio_total;
-            let prediction = "";
-            let colorClass = "text-yellow-400";
+        function cargarPronosticosGuardados() {
+            const container = document.getElementById('predictions-container');
+            const pronosticos = JSON.parse(localStorage.getItem('pronosticos') || '[]');
             
-            // Umbrales de predicción de córners
-            if (totalCornersAvg > 11.0) {
-                prediction = `¡MÁS DE 10.5 CÓRNERS! (Media: ${totalCornersAvg.toFixed(1)})`;
-                colorClass = "text-green-400";
-            } else if (totalCornersAvg < 9.0) {
-                prediction = `MENOS DE 10.5 CÓRNERS (Media: ${totalCornersAvg.toFixed(1)})`;
-                colorClass = "text-red-400";
-            } else {
-                prediction = `MEDIO: ALREDEDOR DE 9 A 11 CÓRNERS (Media: ${totalCornersAvg.toFixed(1)})`;
-                colorClass = "text-yellow-400";
-            }
-
-            return { prediction, colorClass };
-        }
-        
-        /**
-         * Genera el pronóstico para el mercado de Faltas Cometidas (Fouls).
-         */
-        function generarPronosticoFaltas(data) {
-            const totalFoulsAvg = data.fouls_promedio_total;
-            let prediction = "";
-            let colorClass = "text-yellow-400";
-
-            // Umbrales de predicción de faltas
-            if (totalFoulsAvg > 27.0) {
-                prediction = `¡MÁS DE 25.5 FALTAS! (Media: ${totalFoulsAvg.toFixed(1)})`;
-                colorClass = "text-red-400";
-            } else if (totalFoulsAvg < 21.0) {
-                prediction = `MENOS DE 25.5 FALTAS (Media: ${totalFoulsAvg.toFixed(1)})`;
-                colorClass = "text-green-400";
-            } else {
-                prediction = `MEDIO: ALREDEDOR DE 22-26 FALTAS (Media: ${totalFoulsAvg.toFixed(1)})`;
-                colorClass = "text-yellow-400";
-            }
-
-            return { prediction, colorClass };
-        }
-        
-        /**
-         * Genera el pronóstico para el mercado de Disparos a Puerta (Shots on Target).
-         */
-        function generarPronosticoShots(data) {
-            const totalShotsAvg = data.shots_on_target_avg;
-            let prediction = "";
-            let colorClass = "text-yellow-400";
-
-            // Umbrales de predicción de Disparos a Puerta
-            if (totalShotsAvg > 10.0) {
-                prediction = `¡MÁS DE 9.5 DISPAROS! (Media: ${totalShotsAvg.toFixed(1)})`;
-                colorClass = "text-green-400";
-            } else if (totalShotsAvg < 7.0) {
-                prediction = `MENOS DE 7.5 DISPAROS (Media: ${totalShotsAvg.toFixed(1)})`;
-                colorClass = "text-red-400";
-            } else {
-                prediction = `MEDIO: ALREDEDOR DE 8-10 DISPAROS (Media: ${totalShotsAvg.toFixed(1)})`;
-                colorClass = "text-yellow-400";
-            }
-
-            return { prediction, colorClass };
-        }
-
-        /**
-         * Genera el pronóstico para el mercado de Total de Tarjetas.
-         */
-        function generarPronosticoCards(data) {
-            const totalCardsAvg = data.cards_total_avg;
-            let prediction = "";
-            let colorClass = "text-yellow-400";
-
-            // Umbrales de predicción de Tarjetas
-            if (totalCardsAvg > 4.8) {
-                prediction = `¡MÁS DE 4.5 TARJETAS! (Media: ${totalCardsAvg.toFixed(1)})`;
-                colorClass = "text-red-400";
-            } else if (totalCardsAvg < 3.0) {
-                prediction = `MENOS DE 3.5 TARJETAS (Media: ${totalCardsAvg.toFixed(1)})`;
-                colorClass = "text-green-400";
-            } else {
-                prediction = `MEDIO: ALREDEDOR DE 4 TARJETAS (Media: ${totalCardsAvg.toFixed(1)})`;
-                colorClass = "text-yellow-400";
-            }
-
-            return { prediction, colorClass };
-        }
-
-        /**
-         * Función principal para obtener datos de la API y realizar el pronóstico.
-         */
-        async function obtenerEstadisticasYPredecir() {
-            const matchId = document.getElementById('matchId').value.trim();
-            const fixtureDateInput = document.getElementById('fixtureDate').value.trim();
-            const leagueNameSelect = document.getElementById('leagueNameSelect');
-            const leagueNameInput = leagueNameSelect.options[leagueNameSelect.selectedIndex].text;
-            const matchSelect = document.getElementById('matchSelect');
-            const selectedMatchName = matchSelect.options[matchSelect.selectedIndex].text; // Nombre del partido
-
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            const outputs = [
-                document.getElementById('predictionOutput'), document.getElementById('predictionGoalsOutput'), 
-                document.getElementById('predictionCornersOutput'), document.getElementById('predictionBTTSOutput'), 
-                document.getElementById('predictionFoulsOutput'), document.getElementById('predictionShotsOutput'), 
-                document.getElementById('predictionCardsOutput')
-            ];
-            const matchInfo = document.getElementById('matchInfo');
-            const predictButton = document.getElementById('predictButton');
-            
-            // 1. Inicialización de la interfaz
-            outputs.forEach(el => el.textContent = "Cargando...");
-            matchInfo.textContent = "";
-            loadingIndicator.classList.remove('hidden');
-            predictButton.disabled = true;
-
-            if (!matchId || matchSelect.value === "") {
-                outputs[0].textContent = "Error: Seleccione un partido primero.";
-                loadingIndicator.classList.add('hidden');
-                predictButton.disabled = false;
+            if (pronosticos.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay pronósticos guardados aún</p>';
                 return;
             }
-
-            try {
-                let data = null;
-                let isSimulated = false;
-
-                // Bloque de llamada REAL a la API (API-Football usa Headers)
-                if (API_KEY !== "TU_CLAVE_SECRETA_DE_API_AQUI") {
-                    const finalUrl = `${STATS_API_URL}?fixture=${matchId}`;
-                    const options = {
-                        method: 'GET',
-                        headers: { 'x-apisports-key': API_KEY }
-                    };
-                    
-                    const response = await fetchWithRetry(finalUrl, options);
-                    
-                    if (response && response.response && response.response.length > 0) {
-                        
-                        // ** Llama a la nueva función de mapeo con los datos reales **
-                        data = mapApiDataToPredictionFormat(response.response, selectedMatchName);
-
-                        if (!data) {
-                             throw new Error("Mapeo fallido. Usando simulación.");
-                        }
-                        console.log("Conexión API exitosa, usando datos REALES.");
-
-                    } else {
-                        // Si la respuesta no es OK (ej. error 403 o límite) o no tiene datos
-                        if (response && response.errors) {
-                            console.error("Error de la API (JSON):", response.errors);
-                        }
-                        data = getSimulatedData(matchId);
-                        isSimulated = true;
-                        console.warn("No se encontraron estadísticas reales o hubo un error, usando datos simulados.");
-                    }
-                } else {
-                    // Si el usuario no puso la clave, usamos los datos simulados.
-                    data = getSimulatedData(matchId);
-                    isSimulated = true;
-                    await new Promise(resolve => setTimeout(resolve, 1500)); // Simula espera
-                    console.log("Usando datos simulados. Cambie la API_KEY para usar datos reales.");
-                }
+            
+            container.innerHTML = `<h3 style="margin-bottom: 20px; color: #667eea;">Total de pronósticos: ${pronosticos.length}</h3>`;
+            
+            pronosticos.reverse().slice(0, 20).forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'prediction-card';
+                const badgeClass = p.prediccion === '1' ? 'badge-1' : p.prediccion === 'X' ? 'badge-x' : 'badge-2';
                 
-                if (!data || data.team_local.includes("no encontrado")) {
-                     throw new Error(`Estadísticas no disponibles para el ID: ${matchId}`);
-                }
-
-                // =======================================================
-                // 3. APLICACIÓN DE TUS ALGORITMOS DE PRONÓSTICO
-                // =======================================================
-                
-                // 1X2 (Resultado Principal)
-                const result1X2 = generarPronostico1X2(data);
-                outputs[0].textContent = result1X2.prediction;
-                outputs[0].className = `text-xl font-extrabold break-words min-h-[40px] flex items-center ${result1X2.predictionClass}`;
-                
-                // GOLES (Más/Menos 2.5)
-                const resultGoals = generarPronosticoGoles(data);
-                outputs[1].textContent = resultGoals.prediction;
-                outputs[1].className = `text-xl font-extrabold break-words min-h-[40px] flex items-center ${resultGoals.colorClass}`;
-
-                // CÓRNERS (Más/Menos 10.5)
-                const resultCorners = generarPronosticoCorners(data);
-                outputs[2].textContent = resultCorners.prediction;
-                outputs[2].className = `text-xl font-extrabold break-words min-h-[40px] flex items-center ${resultCorners.colorClass}`;
-
-                // AMBOS EQUIPOS MARCAN (BTTS)
-                const resultBTTS = generarPronosticoBTTS(data);
-                outputs[3].textContent = resultBTTS.prediction;
-                outputs[3].className = `text-xl font-extrabold break-words min-h-[40px] flex items-center ${resultBTTS.colorClass}`;
-
-                // FALTAS COMETIDAS
-                const resultFouls = generarPronosticoFaltas(data);
-                outputs[4].textContent = resultFouls.prediction;
-                outputs[4].className = `text-xl font-extrabold break-words min-h-[40px] flex items-center ${resultFouls.colorClass}`;
-                
-                // DISPAROS A PUERTA
-                const resultShots = generarPronosticoShots(data);
-                outputs[5].textContent = resultShots.prediction;
-                outputs[5].className = `text-xl font-extrabold break-words min-h-[40px] flex items-center ${resultShots.colorClass}`;
-
-                // TOTAL TARJETAS
-                const resultCards = generarPronosticoCards(data);
-                outputs[6].textContent = resultCards.prediction;
-                outputs[6].className = `text-xl font-extrabold break-words min-h-[40px] flex items-center ${resultCards.colorClass}`;
-
-                // 4. Mostrar el Resultado en la Interfaz (Información del Partido)
-                const local = data.team_local;
-                const visitor = data.team_visitante;
-                
-                let warning = isSimulated ? ' (⚠️ Usando Datos Simulados)' : '';
-
-                matchInfo.innerHTML = `
-                    <p class="text-xl font-extrabold text-text-light">${local} vs ${visitor}</p>
-                    <p class="text-sm font-normal text-text-light">${leagueNameInput} | ${fixtureDateInput}${warning}</p>
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                        <img src="${p.homeLogo}" style="width: 40px; height: 40px; object-fit: contain;">
+                        <div style="flex: 1;">
+                            <strong>${p.homeTeam} vs ${p.awayTeam}</strong><br>
+                            <small style="color: #666;">${new Date(p.fecha).toLocaleString('es-ES')}</small>
+                        </div>
+                        <img src="${p.awayLogo}" style="width: 40px; height: 40px; object-fit: contain;">
+                    </div>
+                    <span class="prediction-badge ${badgeClass}">Predicción: ${p.prediccion}</span>
                 `;
+                container.appendChild(div);
+            });
+        }
 
-            } catch (error) {
-                // 5. Manejo de Errores
-                console.error("Error al obtener datos o procesar:", error);
-                outputs[0].textContent = `❌ ERROR: ${error.message}. Verifique la selección o la API Key.`;
-                outputs[0].classList.add('text-red-500');
-                matchInfo.textContent = "";
-            } finally {
-                // 6. Ocultar indicador de carga y habilitar botón
-                loadingIndicator.classList.add('hidden');
-                predictButton.disabled = false;
+        function limpiarPronosticos() {
+            if (confirm('¿Estás seguro de que quieres eliminar todos los pronósticos guardados?')) {
+                localStorage.removeItem('pronosticos');
+                cargarPronosticosGuardados();
+                mostrarMensaje('success', '🗑️ Historial de pronósticos eliminado');
             }
         }
-        
-        // Ejecuta la función al cargar la página para inicializar el selector de partidos
-        window.onload = loadMatchesForLeagueAndDate;
-    </script>
 
+        function mostrarMensaje(tipo, mensaje) {
+            const div = document.createElement('div');
+            div.className = tipo === 'success' ? 'success-message' : 'error-message';
+            div.textContent = mensaje;
+            div.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10001; max-width: 400px;';
+            
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 4000);
+        }
+
+        window.onload = () => {
+            console.log('✅ App de Pronósticos de Fútbol cargada');
+            console.log('🔑 API Key: ' + API_KEY);
+            console.log('🌐 API URL: ' + CONFIG.apiUrl);
+            cargarPronosticosGuardados();
+        };
+    </script>
 </body>
 </html>
